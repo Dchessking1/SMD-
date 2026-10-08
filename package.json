@@ -1,0 +1,22 @@
+{
+  "name": "voosquare-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VooSquare for Android and iPhone (Capacitor shell around https://voosquare.com/app).",
+  "scripts": {
+    "android": "node scripts/prepare.js android",
+    "ios": "node scripts/prepare.js ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/ios": "^7.4.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.0"
+  }
+}

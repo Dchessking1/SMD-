@@ -1,0 +1,38 @@
+{
+  "appId": "com.zedapex.voosquare",
+  "appName": "VooSquare",
+  "webDir": "www",
+  "server": {
+    "url": "https://voosquare.com/app",
+    "errorPath": "offline.html",
+    "allowNavigation": ["voosquare.com", "*.voosquare.com", "voosquareacademy.com", "*.voosquareacademy.com"]
+  },
+  "android": {
+    "appendUserAgent": "VooSquareApp/1.0 (android)",
+    "backgroundColor": "#0A1611",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "appendUserAgent": "VooSquareApp/1.0 (ios)",
+    "backgroundColor": "#0A1611",
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1400,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 300,
+      "backgroundColor": "#0A1611",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": false,
+      "splashImmersive": false
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "LIGHT",
+      "backgroundColor": "#F3F5F4"
+    }
+  }
+}

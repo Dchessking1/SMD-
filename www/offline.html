@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>VooSquare</title>
+<style>
+  :root { --bg: #0A1611; --ink: #EAF4EE; --mut: #9FB8AA; --lime: #C9F65B; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: calc(32px + env(safe-area-inset-top)) 28px calc(32px + env(safe-area-inset-bottom));
+    background: radial-gradient(120% 70% at 50% 0%, rgba(18,199,132,.18), transparent 60%); }
+  .logo { width: 84px; height: 84px; margin-bottom: 28px; animation: float 3.2s ease-in-out infinite; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.02em; }
+  p { margin: 0 0 28px; color: var(--mut); max-width: 320px; }
+  button { appearance: none; border: 0; border-radius: 999px; background: var(--lime); color: #0A1611; font: 700 16px/1 inherit; font-family: inherit;
+    padding: 16px 28px; min-width: 200px; cursor: pointer; }
+  button:active { transform: scale(.98); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #F2A33A; margin-right: 8px; vertical-align: middle; }
+  small { margin-top: 18px; color: var(--mut); font-size: 13px; min-height: 18px; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) { .logo { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12C784"/><stop offset="1" stop-color="#00774B"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#g)"/><rect x="112" y="112" width="128" height="128" rx="36" fill="#fff"/><rect x="272" y="112" width="128" height="128" rx="36" fill="#fff" opacity=".75"/><rect x="112" y="272" width="128" height="128" rx="36" fill="#fff" opacity=".75"/><rect x="272" y="272" width="128" height="128" rx="36" fill="#C9F65B"/></svg>
+  <h1><span class="dot"></span>You're offline</h1>
+  <p>VooSquare needs the internet to load your square. Check your data or Wi-Fi, then try again.</p>
+  <button type="button" id="retry">Try again</button>
+  <small id="msg" aria-live="polite"></small>
+</main>
+<script>
+  var HOME = 'https://voosquare.com/app';
+  var btn = document.getElementById('retry'), msg = document.getElementById('msg');
+  function go() {
+    msg.textContent = 'Connecting…';
+    location.href = HOME;
+  }
+  btn.addEventListener('click', go);
+  window.addEventListener('online', go);
+</script>
+</body>
+</html>

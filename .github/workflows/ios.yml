@@ -1,0 +1,78 @@
+# Builds VooSquare for iPhone on every push to main (or by hand: Actions → iOS → Run workflow).
+# Without Apple secrets: checks that the app compiles for iPhone and makes a Simulator build (artifact voosquare-ios-simulator).
+# With the Apple secrets (see MOBILE-GUIDE.md): signs the app and uploads it to App Store Connect / TestFlight.
+name: iOS
+on:
+  push:
+    branches: [main, mobile]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APP_VERSION: ${{ vars.APP_VERSION }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)/Contents/Developer"
+          xcodebuild -version | tee -a "$RUNNER_TEMP/build.log"
+      - name: Install
+        run: npm install --no-audit --no-fund 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+      - name: Create the iOS project
+        run: |
+          set -o pipefail
+          npx cap add ios 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          npx capacitor-assets generate --ios 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          node scripts/prepare.js ios 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+          npx cap sync ios 2>&1 | tee -a "$RUNNER_TEMP/build.log"
+      - name: Build for the iPhone Simulator (no signing)
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build 2>&1 | tail -n 200 | tee -a "$RUNNER_TEMP/build.log"
+          cd "$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator" && zip -qry "$RUNNER_TEMP/VooSquare-simulator.zip" App.app
+      - name: Build for real iPhones (no signing, checks the device build)
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd2" CODE_SIGNING_ALLOWED=NO build 2>&1 | tail -n 200 | tee -a "$RUNNER_TEMP/build.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voosquare-ios-simulator
+          path: ${{ runner.temp }}/VooSquare-simulator.zip
+      - name: Sign and upload to TestFlight (only when the Apple secrets are set)
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ] || [ -z "$TEAM_ID" ]; then
+            echo "Apple secrets not set yet: skipping signing and upload."; exit 0
+          fi
+          set -o pipefail
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"; printf '%s' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/VooSquare.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic "${AUTH[@]}" archive 2>&1 | tail -n 200 | tee -a "$RUNNER_TEMP/build.log"
+          sed "s/__TEAM_ID__/$TEAM_ID/" scripts/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/VooSquare.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}" 2>&1 | tail -n 100 | tee -a "$RUNNER_TEMP/build.log"
+          echo "Uploaded to App Store Connect. It appears in TestFlight after Apple finishes processing (5-30 minutes)."
+      - name: Build report
+        if: always()
+        run: bash scripts/report.sh ios "${{ job.status }}"
